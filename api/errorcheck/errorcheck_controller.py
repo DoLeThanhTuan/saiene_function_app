@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from exceptions.app_exception import ConflictError
+from core.exceptions.app_exception import ConflictError
 
 router = APIRouter()
 
