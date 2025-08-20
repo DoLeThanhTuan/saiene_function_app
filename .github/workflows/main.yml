@@ -11,9 +11,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-function.outputs.webapp-url }}
 
     steps:
       - name: Checkout repository
