@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request
 router = APIRouter()
 
 @router.get("/")
-def health_check_root(request: Request):
+def health_check_root():
     """
     Endpoint cơ bản để kiểm tra sức khỏe.
     """
