@@ -1,37 +1,19 @@
 import azure.functions as func
-from fastapi import FastAPI
+from api.healthcheck.healthcheck_controller import app as healthcheck_app  # Import ứng dụng FastAPI của bạn
 
-from core.configs.env import get_settings
-from api.healthcheck import healthcheck_app, healthcheck_route
-
+# Điểm khởi đầu của Azure Functions
 app = func.FunctionApp()
-settings = get_settings()
 
+# Đăng ký ứng dụng FastAPI của bạn với Azure Functions
+# Đoạn mã này sẽ bắt tất cả các request đến /api/healthcheck/* và chuyển cho FastAPI
+@app.route(route="healthcheck/{*route}", auth_level=func.AuthLevel.ANONYMOUS)
+async def healthcheck(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
+    """
+    Điều hướng tất cả các request trong route 'healthcheck' cho ứng dụng FastAPI xử lý.
+    """
+    return await func.AsgiMiddleware(healthcheck_app).handle_async(req, context)
 
-def register_api(
-    fast_app: FastAPI,
-    func_name: str,
-    route_prefix: str,
-    auth_level: func.AuthLevel = func.AuthLevel.ANONYMOUS,
-):
-    """Register fastapi api to Azure functions"""
-
-    @app.function_name(func_name)
-    @app.route(
-        route=route_prefix + "/{*route}",
-        auth_level=auth_level,
-        methods=[
-            func.HttpMethod.GET,
-            func.HttpMethod.POST,
-            func.HttpMethod.PUT,
-            func.HttpMethod.PATCH,
-            func.HttpMethod.DELETE,
-            func.HttpMethod.OPTIONS,
-        ],
-    )
-    async def _(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
-        return await func.AsgiMiddleware(fast_app).handle_async(req, context)
-
-
-# Register api
-register_api(healthcheck_app, "healthcheck", healthcheck_route)
+# Bạn có thể đăng ký thêm các app khác ở đây
+# @app.route(route="users/{*route}", auth_level=func.AuthLevel.FUNCTION)
+# async def users(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
+#     return await func.AsgiMiddleware(users_app).handle_async(req, context)
