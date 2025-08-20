@@ -1,37 +1,37 @@
 import azure.functions as func
-import logging
+from fastapi import FastAPI
 
-# 1. Khởi tạo một đối tượng FunctionApp. Đây là điểm khởi đầu.
+from core.configs.env import get_settings
+from api.healthcheck import healthcheck_app, healthcheck_route
+
 app = func.FunctionApp()
+settings = get_settings()
 
 
-# 2. Sử dụng decorator `@app.route` để định nghĩa một HTTP Trigger.
-#    - route="hello": URL của API sẽ là /api/hello
-#    - auth_level=func.AuthLevel.ANONYMOUS: Cho phép bất kỳ ai cũng có thể gọi mà không cần API key.
-@app.route(route="hello", auth_level=func.AuthLevel.ANONYMOUS)
-def http_trigger_hello(req: func.HttpRequest) -> func.HttpResponse:
-    """
-    Một hàm HTTP Trigger đơn giản.
-    """
-    logging.info("Python HTTP trigger function processed a request.")
+def register_api(
+    fast_app: FastAPI,
+    func_name: str,
+    route_prefix: str,
+    auth_level: func.AuthLevel = func.AuthLevel.ANONYMOUS,
+):
+    """Register fastapi api to Azure functions"""
 
-    # Lấy tham số 'name' từ query string (ví dụ: /api/hello?name=World)
-    name = req.params.get("name")
-    if not name:
-        try:
-            # Nếu không có, thử lấy từ body của request (JSON)
-            req_body = req.get_json()
-        except ValueError:
-            pass
-        else:
-            name = req_body.get("name")
+    @app.function_name(func_name)
+    @app.route(
+        route=route_prefix + "/{*route}",
+        auth_level=auth_level,
+        methods=[
+            func.HttpMethod.GET,
+            func.HttpMethod.POST,
+            func.HttpMethod.PUT,
+            func.HttpMethod.PATCH,
+            func.HttpMethod.DELETE,
+            func.HttpMethod.OPTIONS,
+        ],
+    )
+    async def _(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
+        return await func.AsgiMiddleware(fast_app).handle_async(req, context)
 
-    if name:
-        return func.HttpResponse(
-            f"Hello, {name}. This HTTP triggered function executed successfully."
-        )
-    else:
-        return func.HttpResponse(
-            "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-            status_code=200,
-        )
+
+# Register api
+register_api(healthcheck_app, "healthcheck", healthcheck_route)
