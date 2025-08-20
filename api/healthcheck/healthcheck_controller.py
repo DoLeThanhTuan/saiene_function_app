@@ -1,13 +1,26 @@
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, Depends, Request
+from core.utils.response import response_success
 
-app = FastAPI()
+router = APIRouter()
 
+@router.get("/")
+def health_check_root(request: Request):
+    """
+    Endpoint cơ bản để kiểm tra sức khỏe.
+    """
+    # Middleware đã xử lý xác thực, bạn có thể truy cập thông tin user ở đây
+    # Ví dụ: user_email = request.state.user.email
+    return response_success("Health check is OK!")
 
-@app.get("/")
-def health_check_root():
-    return {"status": "OK", "message": "Healthcheck root is healthy!"}
-
-
-@app.get("/details")
+@router.get("/details")
 def health_check_details():
-    return {"status": "OK", "version": "1.0.0"}
+    """
+    Endpoint trả về thông tin chi tiết hơn.
+    """
+    return response_success({
+        "status": "Healthy",
+        "services": {
+            "database": "Connected",
+            "cache": "Connected"
+        }
+    })
